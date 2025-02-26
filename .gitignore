@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 tests/.env
-.env
+src/sangsangstudio/.env
 # C extensions
 *.so
 .idea/
