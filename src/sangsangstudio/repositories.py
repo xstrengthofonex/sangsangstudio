@@ -46,6 +46,14 @@ class MySQLRepository:
             (user.id, user.username))
         cnx.commit()
 
+    def update_user(self, user: User):
+        cnx = self.connector.connect()
+        cursor = cnx.cursor()
+        cursor.execute(
+            "UPDATE users SET username = %s WHERE id = %s",
+            (user.username, user.id))
+        cnx.commit()
+
     def find_user(self, user_id: int) -> User | None:
         cnx = self.connector.connect()
         cursor = cnx.cursor()

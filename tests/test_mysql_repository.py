@@ -1,8 +1,23 @@
+import pytest
+
 from sangsangstudio.entities import User
 
 
-def test_repository(repository):
+@pytest.fixture
+def a_user(repository):
     user = User(id=1, username="user")
     repository.save_user(user)
-    assert repository.find_user(user.id) == user
+    return user
+
+
+def test_created_user(a_user, repository):
+    assert repository.find_user(a_user.id) == a_user
+
+
+def test_update_user(a_user, repository):
+    new_username = "new_username"
+    a_user.username = new_username
+    repository.update_user(a_user)
+    found_user = repository.find_user(a_user.id)
+    assert found_user.username == new_username
 
