@@ -2,3 +2,4 @@ pytest
 falcon
 jinja2
 waitress
+python-dotenv

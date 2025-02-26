@@ -5,7 +5,7 @@ from falcon import App, Request, Response, HTTP_OK
 from jinja2 import Environment, FileSystemLoader
 from waitress import serve
 
-from src.sangsangstudio.settings import TEMPLATES_DIR
+from src.sangsangstudio.settings import TEMPLATES_DIR, STATIC_DIR
 
 
 class TemplateView(ABC):
@@ -39,6 +39,7 @@ def create_app():
     view = Jinja2TemplateView(TEMPLATES_DIR)
     home_resource = HomeResource(view)
     app.add_route("/", home_resource)
+    app.add_static_route("/static", STATIC_DIR)
     return app
 
 
