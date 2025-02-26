@@ -54,6 +54,12 @@ class MySQLRepository:
             (user.username, user.id))
         cnx.commit()
 
+    def delete_user(self, user_id: int):
+        cnx = self.connector.connect()
+        cursor = cnx.cursor()
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id, ))
+        cnx.commit()
+
     def find_user(self, user_id: int) -> User | None:
         cnx = self.connector.connect()
         cursor = cnx.cursor()

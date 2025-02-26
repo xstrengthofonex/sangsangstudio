@@ -10,7 +10,7 @@ def a_user(repository):
     return user
 
 
-def test_created_user(a_user, repository):
+def test_create_user(a_user, repository):
     assert repository.find_user(a_user.id) == a_user
 
 
@@ -21,3 +21,7 @@ def test_update_user(a_user, repository):
     found_user = repository.find_user(a_user.id)
     assert found_user.username == new_username
 
+
+def test_delete_user(a_user, repository):
+    repository.delete_user(a_user.id)
+    assert repository.find_user(a_user.id) is None
