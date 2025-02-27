@@ -1,9 +1,12 @@
+from typing import Generator, Any
+
 import pytest
 import os
 from dotenv import load_dotenv
 
 from sangsangstudio.repositories import (
     MySQLConnector, MySQLRepository)
+
 
 load_dotenv()
 
@@ -45,7 +48,7 @@ def mysql_connector(mysql_user, mysql_host, mysql_password, mysql_port, mysql_da
 
 
 @pytest.fixture
-def repository(mysql_connector):
+def repository(mysql_connector) -> Generator[MySQLRepository, Any, None]:
     repository = MySQLRepository(mysql_connector)
     repository.create_tables()
     yield repository

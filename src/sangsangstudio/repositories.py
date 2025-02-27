@@ -1,6 +1,26 @@
+from abc import ABCMeta, abstractmethod
+
 import mysql.connector
 
 from sangsangstudio.entities import User
+
+
+class Repository(metaclass=ABCMeta):
+    @abstractmethod
+    def save_user(self, user: User):
+        pass
+
+    @abstractmethod
+    def update_user(self, user: User):
+        pass
+
+    @abstractmethod
+    def delete_user(self, user_id: int):
+        pass
+
+    @abstractmethod
+    def find_user(self, user_id: int) -> User | None:
+        pass
 
 
 class MySQLConnector:
@@ -20,7 +40,7 @@ class MySQLConnector:
             port=self.port)
 
 
-class MySQLRepository:
+class MySQLRepository(Repository):
     def __init__(self, connector: MySQLConnector):
         self.connector = connector
 
@@ -44,6 +64,7 @@ class MySQLRepository:
         cursor.execute(
             "INSERT INTO users (id, username) VALUES (%s, %s)",
             (user.id, user.username))
+        user.id = cursor.lastrowid
         cnx.commit()
 
     def update_user(self, user: User):

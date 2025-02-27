@@ -5,7 +5,7 @@ from sangsangstudio.entities import User
 
 @pytest.fixture
 def a_user(repository):
-    user = User(id=1, username="user")
+    user = User(username="user")
     repository.save_user(user)
     return user
 

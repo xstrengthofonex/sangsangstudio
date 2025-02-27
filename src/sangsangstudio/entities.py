@@ -3,5 +3,5 @@ from dataclasses import dataclass
 
 @dataclass
 class User:
-    id: int
-    username: str
+    id: int | None = None
+    username: str = ""
