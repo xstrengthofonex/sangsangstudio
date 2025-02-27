@@ -49,8 +49,9 @@ class MySQLRepository(Repository):
         cursor = cnx.cursor()
         cursor.execute(
             "CREATE TABLE IF NOT EXISTS users ("
-            "  id int(11) NOT NULL AUTO_INCREMENT,"
-            "  username varchar(255),"
+            "  id INT(11) NOT NULL AUTO_INCREMENT,"
+            "  username VARCHAR(255),"
+            "  password_hash BINARY(60),"
             "  PRIMARY KEY (id))")
 
     def drop_tables(self):
@@ -62,8 +63,8 @@ class MySQLRepository(Repository):
         cnx = self.connector.connect()
         cursor = cnx.cursor()
         cursor.execute(
-            "INSERT INTO users (id, username) VALUES (%s, %s)",
-            (user.id, user.username))
+            "INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s)",
+            (user.id, user.username, user.password_hash))
         user.id = cursor.lastrowid
         cnx.commit()
 
@@ -90,5 +91,5 @@ class MySQLRepository(Repository):
 
     @staticmethod
     def row_to_user(row: tuple) -> User:
-        user_id, username = row
-        return User(id=user_id, username=username)
+        user_id, username, password_hash = row
+        return User(id=user_id, username=username, password_hash=password_hash)
