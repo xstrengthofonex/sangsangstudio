@@ -14,7 +14,6 @@ class TemplateView(ABC):
         pass
 
 
-
 class Jinja2TemplateView(TemplateView):
     def __init__(self, path: str):
         self.env = Environment(loader=FileSystemLoader(path))

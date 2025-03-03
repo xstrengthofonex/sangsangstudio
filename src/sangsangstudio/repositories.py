@@ -19,7 +19,11 @@ class Repository(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def find_user(self, user_id: int) -> User | None:
+    def find_user_by_id(self, user_id: int) -> User | None:
+        pass
+
+    @abstractmethod
+    def find_user_by_username(self, username: str) -> User | None:
         pass
 
 
@@ -82,10 +86,17 @@ class MySQLRepository(Repository):
         cursor.execute("DELETE FROM users WHERE id = %s", (user_id, ))
         cnx.commit()
 
-    def find_user(self, user_id: int) -> User | None:
+    def find_user_by_id(self, user_id: int) -> User | None:
         cnx = self.connector.connect()
         cursor = cnx.cursor()
         cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        row = cursor.fetchone()
+        return self.row_to_user(row) if row else None
+
+    def find_user_by_username(self, username: str) -> User | None:
+        cnx = self.connector.connect()
+        cursor = cnx.cursor()
+        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
         row = cursor.fetchone()
         return self.row_to_user(row) if row else None
 
