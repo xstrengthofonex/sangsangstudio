@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 import mysql.connector
 
-from sangsangstudio.entities import User
+from sangsangstudio.entities import User, Session
 
 
 class Repository(metaclass=ABCMeta):
@@ -24,6 +24,14 @@ class Repository(metaclass=ABCMeta):
 
     @abstractmethod
     def find_user_by_username(self, username: str) -> User | None:
+        pass
+
+    @abstractmethod
+    def save_session(self, session: Session):
+        pass
+
+    @abstractmethod
+    def find_session_by_id(self, session_id: str) -> Session | None:
         pass
 
 
@@ -57,11 +65,19 @@ class MySQLRepository(Repository):
             "  username VARCHAR(255),"
             "  password_hash BINARY(60),"
             "  PRIMARY KEY (id))")
+        cursor.execute(
+            "CREATE TABLE IF NOT EXISTS sessions ("
+            "   session_id VARCHAR(36),"
+            "   user_id INT(11),"
+            "   PRIMARY KEY (session_id),"
+            "   FOREIGN KEY (user_id) REFERENCES users(id))")
 
     def drop_tables(self):
         cnx = self.connector.connect()
         cursor = cnx.cursor()
+        cursor.execute("DROP TABLE IF EXISTS sessions")
         cursor.execute("DROP TABLE IF EXISTS users")
+
 
     def save_user(self, user: User):
         cnx = self.connector.connect()
@@ -100,7 +116,31 @@ class MySQLRepository(Repository):
         row = cursor.fetchone()
         return self.row_to_user(row) if row else None
 
+    def save_session(self, session: Session):
+        cnx = self.connector.connect()
+        cursor = cnx.cursor()
+        cursor.execute(
+            "INSERT INTO sessions (session_id, user_id) VALUES (%s, %s)",
+            (session.id, session.user.id))
+        cnx.commit()
+
+    def find_session_by_id(self, session_id: str) -> Session | None:
+        cnx = self.connector.connect()
+        cursor = cnx.cursor()
+        cursor.execute(
+            "SELECT sessions.session_id, users.id, users.username, users.password_hash "
+            "FROM sessions "
+            "INNER JOIN users ON sessions.user_id = users.id "
+            "WHERE sessions.session_id = %s", (session_id, ))
+        row = cursor.fetchone()
+        return self.row_to_session(row) if row else None
+
     @staticmethod
     def row_to_user(row: tuple) -> User:
         user_id, username, password_hash = row
         return User(id=user_id, username=username, password_hash=password_hash)
+
+    def row_to_session(self, row: tuple) -> Session:
+        session_id, *rest = row
+        return Session(id=session_id, user=self.row_to_user(rest))
+
