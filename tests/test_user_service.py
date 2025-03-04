@@ -1,61 +1,14 @@
 import pytest
 
-from conftest import clock
+from conftest import user_service, a_user, login_request, a_session
 from sangsangstudio.services import (
-    CreateUserRequest,
-    UserDto,
-    UserService,
     UnauthorizedLogin,
     LoginRequest,
-    PasswordHasher, SessionNotFound)
-
-
-class FakePasswordHasher(PasswordHasher):
-    def hash(self, password: str) -> bytes:
-        return password.encode()
-
-    def check(self, password: str, hashed: bytes) -> bool:
-        return password.encode() == hashed.strip(b"\x00")
-
-
-@pytest.fixture
-def password_hasher() -> PasswordHasher:
-    return FakePasswordHasher()
-
-
-@pytest.fixture
-def user_service(repository, password_hasher, clock):
-    return UserService(repository, password_hasher, clock)
-
-
-@pytest.fixture
-def user_password():
-    return "&tb&2l(@WqE&u"
-
-
-@pytest.fixture
-def create_user_request(user_password) -> CreateUserRequest:
-    return CreateUserRequest(
-        username="a_user",
-        password=user_password)
-
-
-@pytest.fixture
-def a_user(user_service, create_user_request) -> UserDto:
-    return user_service.create_user(create_user_request)
+    SessionNotFound)
 
 
 def test_create_user(user_service, a_user):
     assert user_service.find_user(a_user.id) == a_user
-
-@pytest.fixture
-def login_request(a_user, user_password):
-    return LoginRequest(username=a_user.username, password=user_password)
-
-
-@pytest.fixture
-def a_session(user_service, login_request):
-    return user_service.login(login_request)
 
 
 def test_login_fail(user_service, a_user):
