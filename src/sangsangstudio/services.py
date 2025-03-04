@@ -2,6 +2,7 @@ import base64
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime
 
 import bcrypt
 
@@ -18,6 +19,7 @@ class UserDto:
 @dataclass(frozen=True)
 class SessionDto:
     id: str
+    created_on: datetime
     user: UserDto
 
 
@@ -59,10 +61,22 @@ class SessionNotFound(RuntimeError):
     pass
 
 
+class Clock(ABC):
+    @abstractmethod
+    def now(self) -> datetime:
+        pass
+
+
+class SystemClock(Clock):
+    def now(self) -> datetime:
+        return datetime.now()
+
+
 class UserService:
-    def __init__(self, repository: Repository, password_hasher: PasswordHasher):
+    def __init__(self, repository: Repository, password_hasher: PasswordHasher, clock: Clock):
         self.repository = repository
         self.password_hasher = password_hasher
+        self.clock = clock
 
     def create_user(self, request: CreateUserRequest) -> UserDto:
         password_hash = self.password_hasher.hash(request.password)
@@ -76,8 +90,14 @@ class UserService:
 
     def login(self, request: LoginRequest) -> SessionDto:
         user = self.repository.find_user_by_username(request.username)
+        session = self.repository.find_session_by_user_id(user.id) if user else None
+        if session:
+            return self.session_to_dto(session)
         if user and self.password_hasher.check(request.password, user.password_hash):
-            session = Session(id=self.generate_session_id(), user=user)
+            session = Session(
+                id=self.generate_session_id(),
+                created_on=self.clock.now(),
+                user=user)
             self.repository.save_session(session)
             return self.session_to_dto(session)
         raise UnauthorizedLogin
@@ -90,15 +110,17 @@ class UserService:
 
     @staticmethod
     def user_to_dto(user: User) -> UserDto:
-        return UserDto(id=user.id, username=user.username)
+        return UserDto(
+            id=user.id,
+            username=user.username)
 
     def session_to_dto(self, session: Session) -> SessionDto:
-        return SessionDto(id=session.id, user=self.user_to_dto(session.user))
+        return SessionDto(
+            id=session.id,
+            created_on=session.created_on,
+            user=self.user_to_dto(session.user))
 
     @staticmethod
     def generate_session_id() -> str:
-        return str(uuid.uuid4()).strip("-")
-
-
-
+        return str(uuid.uuid4().hex)
 

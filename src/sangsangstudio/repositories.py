@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from datetime import datetime
 
 import mysql.connector
 
@@ -34,6 +35,10 @@ class Repository(metaclass=ABCMeta):
     def find_session_by_id(self, session_id: str) -> Session | None:
         pass
 
+    @abstractmethod
+    def find_session_by_user_id(self, user_id: int) -> Session | None:
+        pass
+
 
 class MySQLConnector:
     def __init__(self, user: str, host: str, port: int, password: str, database: str):
@@ -61,15 +66,16 @@ class MySQLRepository(Repository):
         cursor = cnx.cursor()
         cursor.execute(
             "CREATE TABLE IF NOT EXISTS users ("
-            "  id INT(11) NOT NULL AUTO_INCREMENT,"
-            "  username VARCHAR(255),"
-            "  password_hash BINARY(60),"
+            "  id INT(11) NOT NULL AUTO_INCREMENT, "
+            "  username VARCHAR(255), "
+            "  password_hash BINARY(60), "
             "  PRIMARY KEY (id))")
         cursor.execute(
             "CREATE TABLE IF NOT EXISTS sessions ("
-            "   session_id VARCHAR(36),"
-            "   user_id INT(11),"
-            "   PRIMARY KEY (session_id),"
+            "   session_id VARCHAR(36), "
+            "   user_id INT(11), "
+            "   created_on TIMESTAMP(6), "
+            "   PRIMARY KEY (session_id), "
             "   FOREIGN KEY (user_id) REFERENCES users(id))")
 
     def drop_tables(self):
@@ -120,15 +126,16 @@ class MySQLRepository(Repository):
         cnx = self.connector.connect()
         cursor = cnx.cursor()
         cursor.execute(
-            "INSERT INTO sessions (session_id, user_id) VALUES (%s, %s)",
-            (session.id, session.user.id))
+            "INSERT INTO sessions (session_id, user_id, created_on) VALUES (%s, %s, %s)",
+            (session.id, session.user.id, session.created_on.strftime("%Y-%m-%d %H:%M:%S.%f")))
         cnx.commit()
 
     def find_session_by_id(self, session_id: str) -> Session | None:
         cnx = self.connector.connect()
         cursor = cnx.cursor()
         cursor.execute(
-            "SELECT sessions.session_id, users.id, users.username, users.password_hash "
+            "SELECT "
+            f"{self.session_fields()} "
             "FROM sessions "
             "INNER JOIN users ON sessions.user_id = users.id "
             "WHERE sessions.session_id = %s", (session_id, ))
@@ -136,11 +143,33 @@ class MySQLRepository(Repository):
         return self.row_to_session(row) if row else None
 
     @staticmethod
+    def session_fields() -> str:
+        return "sessions.session_id, sessions.created_on, users.id, users.username, users.password_hash"
+
+    def find_session_by_user_id(self, user_id: int) -> Session | None:
+        cnx = self.connector.connect()
+        cursor = cnx.cursor()
+        cursor.execute(
+            "SELECT "
+            f"{self.session_fields()} "
+            "FROM sessions "
+            "INNER JOIN users ON sessions.user_id = users.id "
+            "WHERE sessions.user_id = %s", (user_id, ))
+        row = cursor.fetchone()
+        return self.row_to_session(row) if row else None
+
+    @staticmethod
     def row_to_user(row: tuple) -> User:
         user_id, username, password_hash = row
-        return User(id=user_id, username=username, password_hash=password_hash)
+        return User(
+            id=user_id,
+            username=username,
+            password_hash=password_hash)
 
     def row_to_session(self, row: tuple) -> Session:
-        session_id, *rest = row
-        return Session(id=session_id, user=self.row_to_user(rest))
+        session_id, created_on, *rest = row
+        return Session(
+            id=session_id,
+            created_on=created_on,
+            user=self.row_to_user(rest))
 
