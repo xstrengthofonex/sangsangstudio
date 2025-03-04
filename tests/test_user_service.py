@@ -6,7 +6,7 @@ from sangsangstudio.services import (
     UserService,
     UnauthorizedLogin,
     LoginRequest,
-    PasswordHasher, SystemClock, Clock)
+    PasswordHasher, SystemClock, Clock, SessionNotFound)
 
 
 class FakePasswordHasher(PasswordHasher):
@@ -72,6 +72,12 @@ def test_login_success(user_service, a_session):
     assert a_session == user_service.find_session(a_session.id)
 
 
-def test_multiple_logins_returns_session(user_service, a_session, login_request):
+def test_multiple_logins_returns_existing_session(user_service, a_session, login_request):
     another_session = user_service.login(login_request)
     assert another_session == a_session
+
+
+def test_logout_deletes_session(user_service, a_session):
+    user_service.logout(a_session.id)
+    with pytest.raises(SessionNotFound):
+        user_service.find_session(a_session.id)

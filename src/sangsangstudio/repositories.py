@@ -39,6 +39,10 @@ class Repository(metaclass=ABCMeta):
     def find_session_by_user_id(self, user_id: int) -> Session | None:
         pass
 
+    @abstractmethod
+    def delete_session(self, session_id: str):
+        pass
+
 
 class MySQLConnector:
     def __init__(self, user: str, host: str, port: int, password: str, database: str):
@@ -157,6 +161,12 @@ class MySQLRepository(Repository):
             "WHERE sessions.user_id = %s", (user_id, ))
         row = cursor.fetchone()
         return self.row_to_session(row) if row else None
+
+    def delete_session(self, session_id: str):
+        cnx = self.connector.connect()
+        cursor = cnx.cursor()
+        cursor.execute("DELETE FROM sessions WHERE session_id = %s", (session_id,))
+        cnx.commit()
 
     @staticmethod
     def row_to_user(row: tuple) -> User:

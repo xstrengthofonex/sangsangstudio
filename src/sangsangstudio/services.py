@@ -108,6 +108,9 @@ class UserService:
             raise SessionNotFound()
         return self.session_to_dto(session)
 
+    def logout(self, session_id: str):
+        self.repository.delete_session(session_id)
+
     @staticmethod
     def user_to_dto(user: User) -> UserDto:
         return UserDto(
