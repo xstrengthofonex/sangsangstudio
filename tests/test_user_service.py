@@ -1,12 +1,13 @@
 import pytest
 
+from conftest import clock
 from sangsangstudio.services import (
     CreateUserRequest,
     UserDto,
     UserService,
     UnauthorizedLogin,
     LoginRequest,
-    PasswordHasher, SystemClock, Clock, SessionNotFound)
+    PasswordHasher, SessionNotFound)
 
 
 class FakePasswordHasher(PasswordHasher):
@@ -20,11 +21,6 @@ class FakePasswordHasher(PasswordHasher):
 @pytest.fixture
 def password_hasher() -> PasswordHasher:
     return FakePasswordHasher()
-
-
-@pytest.fixture
-def clock() -> Clock:
-    return SystemClock()
 
 
 @pytest.fixture

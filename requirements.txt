@@ -5,3 +5,4 @@ waitress
 python-dotenv
 mysql-connector-python
 bcrypt
+tzdata

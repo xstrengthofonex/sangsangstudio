@@ -1,8 +1,10 @@
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import mysql.connector
 
+from sangsangstudio.clock import Clock
 from sangsangstudio.entities import User, Session
 
 
@@ -62,7 +64,8 @@ class MySQLConnector:
 
 
 class MySQLRepository(Repository):
-    def __init__(self, connector: MySQLConnector):
+    def __init__(self, connector: MySQLConnector, clock: Clock):
+        self.clock = clock
         self.connector = connector
 
     def create_tables(self):
@@ -180,6 +183,6 @@ class MySQLRepository(Repository):
         session_id, created_on, *rest = row
         return Session(
             id=session_id,
-            created_on=created_on,
+            created_on=self.clock.add_timezone(created_on),
             user=self.row_to_user(rest))
 

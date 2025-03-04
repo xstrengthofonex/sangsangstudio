@@ -1,4 +1,3 @@
-import base64
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -6,6 +5,7 @@ from datetime import datetime
 
 import bcrypt
 
+from sangsangstudio.clock import Clock
 from sangsangstudio.entities import User, Session
 from sangsangstudio.repositories import Repository
 
@@ -59,17 +59,6 @@ class BcryptPasswordHasher(PasswordHasher):
 
 class SessionNotFound(RuntimeError):
     pass
-
-
-class Clock(ABC):
-    @abstractmethod
-    def now(self) -> datetime:
-        pass
-
-
-class SystemClock(Clock):
-    def now(self) -> datetime:
-        return datetime.now()
 
 
 class UserService:

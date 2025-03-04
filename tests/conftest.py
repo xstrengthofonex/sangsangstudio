@@ -4,6 +4,7 @@ import pytest
 import os
 from dotenv import load_dotenv
 
+from sangsangstudio.clock import Clock, SystemClock
 from sangsangstudio.repositories import (
     MySQLConnector, MySQLRepository)
 
@@ -48,8 +49,13 @@ def mysql_connector(mysql_user, mysql_host, mysql_password, mysql_port, mysql_da
 
 
 @pytest.fixture
-def repository(mysql_connector) -> Generator[MySQLRepository, Any, None]:
-    repository = MySQLRepository(mysql_connector)
+def repository(mysql_connector, clock) -> Generator[MySQLRepository, Any, None]:
+    repository = MySQLRepository(mysql_connector, clock)
     repository.create_tables()
     yield repository
     repository.drop_tables()
+
+
+@pytest.fixture
+def clock() -> Clock:
+    return SystemClock()
