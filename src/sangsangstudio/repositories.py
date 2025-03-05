@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 import mysql.connector
-from mysql.connector.aio.abstracts import MySQLCursorAbstract
+from mysql.connector.abstracts import MySQLCursorAbstract
 
 from sangsangstudio.clock import Clock
 from sangsangstudio.entities import (
