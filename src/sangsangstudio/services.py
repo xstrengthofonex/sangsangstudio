@@ -2,11 +2,12 @@ import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 
 import bcrypt
 
 from sangsangstudio.clock import Clock
-from sangsangstudio.entities import User, Session
+from sangsangstudio.entities import User, Session, Post, Content
 from sangsangstudio.repositories import Repository
 
 
@@ -116,3 +117,84 @@ class UserService:
     def generate_session_id() -> str:
         return str(uuid.uuid4().hex)
 
+
+@dataclass(frozen=True)
+class CreatePostRequest:
+    session_id: str
+    title: str
+
+
+class PostStatusDto(Enum):
+    DRAFT = 0
+    PUBLISHED = 1
+
+
+class ContentTypeDto(Enum):
+    PARAGRAPH = 0
+
+
+@dataclass(frozen=True)
+class ContentDto:
+    id: int
+    type: ContentTypeDto
+    text: str
+
+
+@dataclass(frozen=True)
+class PostDto:
+    id: int
+    author: UserDto
+    created_on: datetime
+    status: PostStatusDto
+    title: str
+    contents: list[ContentDto]
+
+
+@dataclass(frozen=True)
+class AddParagraphRequest:
+    session_id: str
+    post_id: int
+    text: str
+
+
+class PostNotFound(RuntimeError):
+    pass
+
+
+class PostService:
+    def __init__(self, repository: Repository, clock: Clock):
+        self.clock = clock
+        self.repository = repository
+
+    def create_post(self, request: CreatePostRequest) -> PostDto:
+        session = self.repository.find_session_by_id(request.session_id)
+        post = Post(author=session.user, created_on=self.clock.now(), title=request.title)
+        self.repository.save_post(post)
+        return self.post_to_dto(post)
+
+    def find_post_by_id(self, post_id: int) -> PostDto:
+        post = self.repository.find_post_by_id(post_id)
+        return self.post_to_dto(post)
+
+    def add_paragraph_to_post(self, request: AddParagraphRequest) -> PostDto:
+        post = self.repository.find_post_by_id(request.post_id)
+        if not post:
+            raise PostNotFound()
+        post.add_paragraph(request.text)
+        self.repository.update_post(post)
+        return self.post_to_dto(post)
+
+    def post_to_dto(self, post: Post) -> PostDto:
+        return PostDto(
+            id=post.id,
+            title=post.title,
+            created_on=post.created_on,
+            author=UserService.user_to_dto(post.author),
+            status=PostStatusDto(post.status.value),
+            contents=self.contents_to_dto(post.contents))
+
+    @staticmethod
+    def contents_to_dto(contents: list[Content]) -> list[ContentDto]:
+        return [ContentDto(
+            id=c.id, type=ContentTypeDto(c.type.value), text=c.text)
+            for c in contents]

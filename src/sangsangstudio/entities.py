@@ -22,6 +22,17 @@ class PostStatus(Enum):
     PUBLISHED = 1
 
 
+class ContentType(Enum):
+    PARAGRAPH = 0
+
+
+@dataclass
+class Content:
+    id: int | None = None
+    type: ContentType = ContentType.PARAGRAPH
+    text: str = ""
+
+
 @dataclass
 class Post:
     id: int | None = None
@@ -29,3 +40,7 @@ class Post:
     created_on: datetime = field(default_factory=datetime.now)
     title: str = ""
     status: PostStatus = PostStatus.DRAFT
+    contents: list[Content] = field(default_factory=list)
+
+    def add_paragraph(self, text: str):
+        self.contents.append(Content(type=ContentType.PARAGRAPH, text=text))
