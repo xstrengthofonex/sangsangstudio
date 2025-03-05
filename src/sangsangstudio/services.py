@@ -131,13 +131,16 @@ class PostStatusDto(Enum):
 
 class ContentTypeDto(Enum):
     PARAGRAPH = 0
+    IMAGE = 1
 
 
 @dataclass(frozen=True)
 class ContentDto:
     id: int
     type: ContentTypeDto
+    order: int
     text: str
+    src: str
 
 
 @dataclass(frozen=True)
@@ -151,10 +154,20 @@ class PostDto:
 
 
 @dataclass(frozen=True)
-class AddParagraphRequest:
+class AddContentRequest:
     session_id: str
     post_id: int
+
+
+@dataclass(frozen=True)
+class AddParagraphRequest(AddContentRequest):
     text: str
+
+
+@dataclass(frozen=True)
+class AddImageRequest(AddContentRequest):
+    text: str
+    src: str
 
 
 class PostNotFound(RuntimeError):
@@ -173,14 +186,24 @@ class PostService:
         return self.post_to_dto(post)
 
     def find_post_by_id(self, post_id: int) -> PostDto:
-        post = self.repository.find_post_by_id(post_id)
+        post = self._find_post_by_id(post_id)
         return self.post_to_dto(post)
 
-    def add_paragraph_to_post(self, request: AddParagraphRequest) -> PostDto:
-        post = self.repository.find_post_by_id(request.post_id)
+    def _find_post_by_id(self, post_id: int) -> Post:
+        post = self.repository.find_post_by_id(post_id)
         if not post:
             raise PostNotFound()
+        return post
+
+    def add_paragraph_to_post(self, request: AddParagraphRequest) -> PostDto:
+        post = self._find_post_by_id(request.post_id)
         post.add_paragraph(request.text)
+        self.repository.update_post(post)
+        return self.post_to_dto(post)
+
+    def add_image_to_post(self, request: AddImageRequest) -> PostDto:
+        post = self._find_post_by_id(request.post_id)
+        post.add_image(request.src, request.src)
         self.repository.update_post(post)
         return self.post_to_dto(post)
 
@@ -196,5 +219,9 @@ class PostService:
     @staticmethod
     def contents_to_dto(contents: list[Content]) -> list[ContentDto]:
         return [ContentDto(
-            id=c.id, type=ContentTypeDto(c.type.value), text=c.text)
+            id=c.id,
+            type=ContentTypeDto(c.type.value),
+            order=c.order,
+            text=c.text,
+            src=c.src)
             for c in contents]

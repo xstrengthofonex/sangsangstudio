@@ -84,7 +84,7 @@ class MySQLRepository(Repository):
     USER_FIELDS = ["id", "username", "password_hash"]
     POST_FIELDS = ["post_id", "author_id", "created_on", "status", "title"]
     SESSION_FIELDS = ["session_id", "created_on", "user_id"]
-    CONTENT_FIELDS = ["content_id", "post_id", "type", "text"]
+    CONTENT_FIELDS = ["content_id", "post_id", "type", "order_no", "text", "src"]
 
     def __init__(self, connector: MySQLConnector, clock: Clock):
         self.clock = clock
@@ -120,7 +120,9 @@ class MySQLRepository(Repository):
             "  content_id INT(11) NOT NULL AUTO_INCREMENT, "
             "  post_id INT(11), "
             "  type INT(6), "
+            "  order_no INT(6), "
             "  text VARCHAR(255), "
+            "  src VARCHAR(255), "
             "  PRIMARY KEY (content_id), "
             "  FOREIGN KEY (post_id) REFERENCES posts(post_id))")
         cnx.close()
@@ -249,7 +251,6 @@ class MySQLRepository(Repository):
         if not row:
             return None
         contents = self.find_contents_for_post(post_id, cursor)
-        cursor.close()
         cnx.close()
         return self.row_to_post(row, contents)
 
@@ -257,8 +258,7 @@ class MySQLRepository(Repository):
         cursor.execute(
             f"SELECT {self.content_field_str(excluding=['post_id'])} "
             f"FROM contents WHERE post_id = %s", (post_id,))
-        rows = cursor.fetchmany()
-        cursor.close()
+        rows = cursor.fetchall()
         return [self.row_to_content(r) for r in rows]
 
     @staticmethod
@@ -272,8 +272,8 @@ class MySQLRepository(Repository):
             cursor.execute(
                 f"INSERT INTO contents "
                 f"({self.content_field_str(excluding=['content_id'])}) "
-                f"VALUES (%s, %s, %s)",
-                (post.id, content.type.value, content.text))
+                f"VALUES (%s, %s, %s, %s, %s)",
+                (post.id, content.type.value, content.order, content.text, content.src))
             content.id = cursor.lastrowid
 
     def update_post(self, post: Post):
@@ -307,7 +307,7 @@ class MySQLRepository(Repository):
     def content_field_str(self, excluding: list[str] = None) -> str:
         return self.create_field_str(excluding, self.CONTENT_FIELDS, "contents")
 
-    def create_field_str(self, excluding, fields, prefix):
+    def create_field_str(self, excluding: list[str], fields: list[str], prefix: str) -> str:
         return ", ".join(self.attach_prefix_to_fields(
             self.remove_exclusions(fields, excluding), prefix))
 
@@ -338,8 +338,10 @@ class MySQLRepository(Repository):
 
     @staticmethod
     def row_to_content(row: tuple) -> Content:
-        content_id, content_type, text = row
-        return Content(id=content_id, type=ContentType(content_type), text=text)
-
-
-
+        content_id, content_type, order, text, src = row
+        return Content(
+            id=content_id,
+            type=ContentType(content_type),
+            order=order,
+            text=text,
+            src=src)

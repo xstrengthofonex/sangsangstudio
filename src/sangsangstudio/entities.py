@@ -24,13 +24,16 @@ class PostStatus(Enum):
 
 class ContentType(Enum):
     PARAGRAPH = 0
+    IMAGE = 1
 
 
 @dataclass
 class Content:
     id: int | None = None
     type: ContentType = ContentType.PARAGRAPH
+    order: int = 1
     text: str = ""
+    src: str = ""
 
 
 @dataclass
@@ -43,4 +46,14 @@ class Post:
     contents: list[Content] = field(default_factory=list)
 
     def add_paragraph(self, text: str):
-        self.contents.append(Content(type=ContentType.PARAGRAPH, text=text))
+        self.contents.append(
+            Content(type=ContentType.PARAGRAPH, order=self.get_next_order(), text=text))
+
+    def add_image(self, src: str, text: str):
+        self.contents.append(
+            Content(type=ContentType.IMAGE, order=self.get_next_order(), text=text, src=src))
+
+    def get_next_order(self) -> int:
+        if not self.contents:
+            return 1
+        return max(c.order for c in self.contents) + 1
