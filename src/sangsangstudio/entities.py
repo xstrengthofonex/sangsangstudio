@@ -4,17 +4,21 @@ from enum import Enum
 
 
 @dataclass
-class User:
+class Entity:
     id: int | None = None
+
+
+@dataclass
+class User(Entity):
     username: str = ""
     password_hash: bytes = b""
 
 
 @dataclass
-class Session:
-    id: str
-    user: User
-    created_on: datetime | None = field(default_factory=datetime.now)
+class Session(Entity):
+    key: str = ""
+    user: User | None = None
+    created_on: datetime = field(default_factory=datetime.now)
 
 
 class PostStatus(Enum):
@@ -28,8 +32,7 @@ class ContentType(Enum):
 
 
 @dataclass
-class Content:
-    id: int | None = None
+class Content(Entity):
     type: ContentType = ContentType.PARAGRAPH
     order: int = 1
     text: str = ""
@@ -37,8 +40,7 @@ class Content:
 
 
 @dataclass
-class Post:
-    id: int | None = None
+class Post(Entity):
     author: User | None = None
     created_on: datetime = field(default_factory=datetime.now)
     title: str = ""

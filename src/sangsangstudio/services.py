@@ -19,7 +19,7 @@ class UserDto:
 
 @dataclass(frozen=True)
 class SessionDto:
-    id: str
+    key: str
     created_on: datetime
     user: UserDto
 
@@ -85,7 +85,7 @@ class UserService:
             return self.session_to_dto(session)
         if user and self.password_hasher.check(request.password, user.password_hash):
             session = Session(
-                id=self.generate_session_id(),
+                key=self.generate_session_id(),
                 created_on=self.clock.now(),
                 user=user)
             self.repository.save_session(session)
@@ -93,7 +93,7 @@ class UserService:
         raise UnauthorizedLogin
 
     def find_session(self, session_id: str) -> SessionDto:
-        session = self.repository.find_session_by_id(session_id)
+        session = self.repository.find_session_by_key(session_id)
         if not session:
             raise SessionNotFound()
         return self.session_to_dto(session)
@@ -109,7 +109,7 @@ class UserService:
 
     def session_to_dto(self, session: Session) -> SessionDto:
         return SessionDto(
-            id=session.id,
+            key=session.key,
             created_on=session.created_on,
             user=self.user_to_dto(session.user))
 
@@ -120,7 +120,7 @@ class UserService:
 
 @dataclass(frozen=True)
 class CreatePostRequest:
-    session_id: str
+    session_key: str
     title: str
 
 
@@ -180,7 +180,7 @@ class PostService:
         self.repository = repository
 
     def create_post(self, request: CreatePostRequest) -> PostDto:
-        session = self.repository.find_session_by_id(request.session_id)
+        session = self.repository.find_session_by_key(request.session_key)
         post = Post(author=session.user, created_on=self.clock.now(), title=request.title)
         self.repository.save_post(post)
         return self.post_to_dto(post)

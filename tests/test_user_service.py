@@ -18,7 +18,7 @@ def test_login_fail(user_service, a_user):
 
 
 def test_login_success(user_service, a_session):
-    assert a_session == user_service.find_session(a_session.id)
+    assert a_session == user_service.find_session(a_session.key)
 
 
 def test_multiple_logins_returns_existing_session(user_service, a_session, login_request):
@@ -27,6 +27,6 @@ def test_multiple_logins_returns_existing_session(user_service, a_session, login
 
 
 def test_logout_deletes_session(user_service, a_session):
-    user_service.logout(a_session.id)
+    user_service.logout(a_session.key)
     with pytest.raises(SessionNotFound):
-        user_service.find_session(a_session.id)
+        user_service.find_session(a_session.key)
