@@ -22,16 +22,28 @@ def test_create_a_post(a_post, post_service):
     assert a_post == post_service.find_post_by_id(a_post.id)
 
 
-def test_add_content_to_a_post(a_session, a_post, post_service):
-    paragraph = post_service.add_paragraph_to_post(AddParagraphRequest(
+@pytest.fixture
+def a_paragraph(a_session, a_post, post_service):
+    return post_service.add_paragraph_to_post(AddParagraphRequest(
         session_id=a_session.key,
         post_id=a_post.id,
         text="Some text"))
-    image = post_service.add_image_to_post(AddImageRequest(
+
+@pytest.fixture
+def an_image(a_session, a_post, post_service):
+    return post_service.add_image_to_post(AddImageRequest(
         session_id=a_session.key,
         post_id=a_post.id,
         text="A picture of something",
         src="/image/url"))
+
+def test_contents(a_session, a_post, post_service, a_paragraph, an_image):
     updated_post = post_service.find_post_by_id(a_post.id)
     assert len(updated_post.contents) == 2
-    assert [paragraph, image] == updated_post.contents
+    assert [a_paragraph, an_image] == updated_post.contents
+
+    post_service.delete_content(a_session, an_image.id)
+    updated_post = post_service.find_post_by_id(a_post.id)
+    assert len(updated_post.contents) == 1
+    assert an_image not in updated_post.contents
+

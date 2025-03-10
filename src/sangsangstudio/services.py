@@ -238,3 +238,6 @@ class PostService:
             sequence=c.sequence,
             text=c.text,
             src=c.src)
+
+    def delete_content(self, session_id: str, content_id: int):
+        self.repository.delete_content(content_id)

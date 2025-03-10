@@ -54,6 +54,10 @@ class Repository(metaclass=ABCMeta):
     def save_content(self, content: Content):
         pass
 
+    @abstractmethod
+    def delete_content(self, content_id: int):
+        pass
+
 
 class MySQLConnector:
     def __init__(self, user: str, host: str, port: int, password: str, database: str):
@@ -336,3 +340,5 @@ class MySQLRepository(Repository):
                   (content.post_id, content.type.value, content.sequence,
                    content.text, content.src))
 
+    def delete_content(self, content_id: int):
+        self.delete("contents", "id", (content_id,))
