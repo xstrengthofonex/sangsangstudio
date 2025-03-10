@@ -58,6 +58,10 @@ class Repository(metaclass=ABCMeta):
     def delete_content(self, content_id: int):
         pass
 
+    @abstractmethod
+    def find_content_by_id(self, content_id: int) -> Content | None:
+        pass
+
 
 class MySQLConnector:
     def __init__(self, user: str, host: str, port: int, password: str, database: str):
@@ -168,6 +172,12 @@ class MySQLRepository(Repository):
             cursor = conn.cursor()
             cursor.execute(statement, params)
             entity.id = cursor.lastrowid
+            conn.commit()
+
+    def update(self, statement: str, params: tuple):
+        with self.connect() as conn:
+            cursor = conn.cursor()
+            cursor.execute(statement, params)
             conn.commit()
 
     @staticmethod
@@ -336,9 +346,26 @@ class MySQLRepository(Repository):
             src=src)
 
     def save_content(self, content: Content):
-        self.save(content, self.insert_content_statement(),
-                  (content.post_id, content.type.value, content.sequence,
-                   content.text, content.src))
+        if content.id:
+            self.update_content(content)
+        else:
+            self.save(content, self.insert_content_statement(),
+                      (content.post_id, content.type.value, content.sequence,
+                       content.text, content.src))
 
     def delete_content(self, content_id: int):
         self.delete("contents", "id", (content_id,))
+
+    def select_content_by_id_statement(self) -> str:
+        return f"SELECT {self.CONTENT_COLUMNS} FROM contents WHERE id = %s"
+
+    def find_content_by_id(self, content_id: int) -> Content | None:
+        row = self.find_one(self.select_content_by_id_statement(), (content_id,))
+        return self.row_to_content(row) if row else None
+
+    @staticmethod
+    def update_contents_statement() -> str:
+        return "UPDATE contents SET text = %s, src = %s WHERE id = %s"
+
+    def update_content(self, content: Content):
+        self.update(self.update_contents_statement(), (content.text, content.src, content.id))

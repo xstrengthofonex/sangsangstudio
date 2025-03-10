@@ -158,21 +158,30 @@ class PostDto:
 class AddContentRequest:
     session_id: str
     post_id: int
-
+    content_type: ContentTypeDto = ContentTypeDto.PARAGRAPH
+    text: str = ""
+    src: str = ""
 
 @dataclass(frozen=True)
 class AddParagraphRequest(AddContentRequest):
-    text: str
+    pass
 
 
 @dataclass(frozen=True)
 class AddImageRequest(AddContentRequest):
-    text: str
-    src: str
+    pass
 
 
 class PostNotFound(RuntimeError):
     pass
+
+
+@dataclass(frozen=True)
+class UpdateContentRequest:
+    session_id: str
+    content_id: int
+    text: str = ""
+    src: str = ""
 
 
 class PostService:
@@ -200,13 +209,7 @@ class PostService:
     def _get_next_sequence(contents: list[Content]) -> int:
         return max(c.sequence for c in contents) + 1 if contents else 1
 
-    def add_paragraph_to_post(self, request: AddParagraphRequest) -> ContentDto:
-        return self.add_content_to_post(request.post_id, ContentType.PARAGRAPH, text=request.text)
-
-    def add_image_to_post(self, request: AddImageRequest) -> ContentDto:
-        return self.add_content_to_post(request.post_id, ContentType.IMAGE, src=request.src)
-
-    def add_content_to_post(self, post_id: int, content_type: ContentType, text: str = "", src: str = "") -> ContentDto:
+    def _add_content_to_post(self, post_id: int, content_type: ContentType, text: str = "", src: str = "") -> ContentDto:
         post = self._find_post_by_id(post_id)
         content = Content(
             post_id=post_id,
@@ -216,6 +219,13 @@ class PostService:
             src=src)
         self.repository.save_content(content)
         return self.content_to_dto(content)
+
+    def add_content_to_post(self, request: AddContentRequest) -> ContentDto:
+        return self._add_content_to_post(
+            request.post_id,
+            ContentType(request.content_type.value),
+            text=request.text,
+            src=request.src)
 
     def post_to_dto(self, post: Post) -> PostDto:
         return PostDto(
@@ -241,3 +251,14 @@ class PostService:
 
     def delete_content(self, session_id: str, content_id: int):
         self.repository.delete_content(content_id)
+
+    def update_content(self, request: UpdateContentRequest) -> ContentDto:
+        content = self.repository.find_content_by_id(request.content_id)
+        content.src = request.src
+        content.text = request.text
+        self.repository.save_content(content)
+        return self.content_to_dto(content)
+
+
+
+
