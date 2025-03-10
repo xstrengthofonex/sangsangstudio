@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -33,8 +34,9 @@ class ContentType(Enum):
 
 @dataclass
 class Content(Entity):
+    post_id: int | None = None
     type: ContentType = ContentType.PARAGRAPH
-    order: int = 1
+    sequence: int = 1
     text: str = ""
     src: str = ""
 
@@ -49,13 +51,13 @@ class Post(Entity):
 
     def add_paragraph(self, text: str):
         self.contents.append(
-            Content(type=ContentType.PARAGRAPH, order=self.get_next_order(), text=text))
+            Content(type=ContentType.PARAGRAPH, sequence=self.get_next_order(), text=text))
 
     def add_image(self, src: str, text: str):
         self.contents.append(
-            Content(type=ContentType.IMAGE, order=self.get_next_order(), text=text, src=src))
+            Content(type=ContentType.IMAGE, sequence=self.get_next_order(), text=text, src=src))
 
     def get_next_order(self) -> int:
         if not self.contents:
             return 1
-        return max(c.order for c in self.contents) + 1
+        return max(c.sequence for c in self.contents) + 1

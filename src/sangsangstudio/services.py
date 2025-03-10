@@ -7,7 +7,7 @@ from enum import Enum
 import bcrypt
 
 from sangsangstudio.clock import Clock
-from sangsangstudio.entities import User, Session, Post, Content
+from sangsangstudio.entities import User, Session, Post, Content, ContentType
 from sangsangstudio.repositories import Repository
 
 
@@ -137,8 +137,9 @@ class ContentTypeDto(Enum):
 @dataclass(frozen=True)
 class ContentDto:
     id: int
+    post_id: int
     type: ContentTypeDto
-    order: int
+    sequence: int
     text: str
     src: str
 
@@ -195,17 +196,26 @@ class PostService:
             raise PostNotFound()
         return post
 
-    def add_paragraph_to_post(self, request: AddParagraphRequest) -> PostDto:
-        post = self._find_post_by_id(request.post_id)
-        post.add_paragraph(request.text)
-        self.repository.update_post(post)
-        return self.post_to_dto(post)
+    @staticmethod
+    def _get_next_sequence(contents: list[Content]) -> int:
+        return max(c.sequence for c in contents) + 1 if contents else 1
 
-    def add_image_to_post(self, request: AddImageRequest) -> PostDto:
-        post = self._find_post_by_id(request.post_id)
-        post.add_image(request.src, request.src)
-        self.repository.update_post(post)
-        return self.post_to_dto(post)
+    def add_paragraph_to_post(self, request: AddParagraphRequest) -> ContentDto:
+        return self.add_content_to_post(request.post_id, ContentType.PARAGRAPH, text=request.text)
+
+    def add_image_to_post(self, request: AddImageRequest) -> ContentDto:
+        return self.add_content_to_post(request.post_id, ContentType.IMAGE, src=request.src)
+
+    def add_content_to_post(self, post_id: int, content_type: ContentType, text: str = "", src: str = "") -> ContentDto:
+        post = self._find_post_by_id(post_id)
+        content = Content(
+            post_id=post_id,
+            type=content_type,
+            sequence=(self._get_next_sequence(post.contents)),
+            text=text,
+            src=src)
+        self.repository.save_content(content)
+        return self.content_to_dto(content)
 
     def post_to_dto(self, post: Post) -> PostDto:
         return PostDto(
@@ -216,12 +226,15 @@ class PostService:
             status=PostStatusDto(post.status.value),
             contents=self.contents_to_dto(post.contents))
 
+    def contents_to_dto(self, contents: list[Content]) -> list[ContentDto]:
+        return [self.content_to_dto(c) for c in contents]
+
     @staticmethod
-    def contents_to_dto(contents: list[Content]) -> list[ContentDto]:
-        return [ContentDto(
+    def content_to_dto(c: Content) -> ContentDto:
+        return ContentDto(
             id=c.id,
+            post_id=c.post_id,
             type=ContentTypeDto(c.type.value),
-            order=c.order,
+            sequence=c.sequence,
             text=c.text,
             src=c.src)
-            for c in contents]
