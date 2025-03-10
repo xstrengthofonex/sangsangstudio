@@ -20,7 +20,6 @@ class AppFactory(ABC):
 
 class DevelopmentAppFactory(AppFactory):
     def __init__(self):
-        load_dotenv()
         self.mysql_connector = MySQLConnector(
             user=os.getenv("MYSQL_USER"),
             password=os.getenv("MYSQL_PASSWORD"),
