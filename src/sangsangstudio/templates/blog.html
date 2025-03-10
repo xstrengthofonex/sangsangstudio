@@ -2,4 +2,9 @@
 
 {% block content %}
 <h1>Blog</h1>
+{% if user %}
+    <a href="/blog/posts/new" class="btn btn-primary btn" role="button">
+        Write A Post
+    </a>
+{% endif %}
 {% endblock %}

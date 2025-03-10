@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from sangsangstudio.clock import SystemClock
 from sangsangstudio.repositories import MySQLConnector, MySQLRepository
-from sangsangstudio.services import PostService, UserService, BcryptPasswordHasher
+from sangsangstudio.services import PostService, UserService, BcryptPasswordHasher, CreateUserRequest
 
 
 class AppFactory(ABC):
@@ -27,21 +27,29 @@ class DevelopmentAppFactory(AppFactory):
         self._clock = SystemClock()
         self._repository = MySQLRepository(self.mysql_connector, self._clock)
         self._password_hasher = BcryptPasswordHasher()
-
-    def post_service(self) -> PostService:
-        return PostService(
-            repository=self._repository,
-            clock=self._clock)
-
-    def user_service(self) -> UserService:
-        return UserService(
+        self._user_service = UserService(
             repository=self._repository,
             clock=self._clock,
             password_hasher=self._password_hasher)
+        self._post_service = PostService(
+            repository=self._repository,
+            clock=self._clock)
+
+    def post_service(self) -> PostService:
+        return self._post_service
+
+    def user_service(self) -> UserService:
+        return self._user_service
+
+    def _load_sample_data(self):
+        self._user_service.create_user(CreateUserRequest(username="vince", password="p1a2s3s4"))
 
     def __enter__(self):
+        self._repository.drop_tables()
         self._repository.create_tables()
+        self._load_sample_data()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
+

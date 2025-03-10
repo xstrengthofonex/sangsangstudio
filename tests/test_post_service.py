@@ -14,8 +14,7 @@ def post_service(repository, clock):
 
 @pytest.fixture
 def a_post(a_session, post_service):
-    create_post_request = CreatePostRequest(
-        session_key=a_session.key, title="A Title")
+    create_post_request = CreatePostRequest(user=a_session.user, title="A Title")
     return post_service.create_post(create_post_request)
 
 
@@ -26,21 +25,21 @@ def test_create_a_post(a_post, post_service):
 @pytest.fixture
 def a_paragraph(a_session, a_post, post_service):
     return post_service.add_content_to_post(AddContentRequest(
-        session_id=a_session.key,
+        user=a_session.user,
         post_id=a_post.id,
         text="Some text"))
 
 @pytest.fixture
 def an_image(a_session, a_post, post_service):
     return post_service.add_content_to_post(AddContentRequest(
-        session_id=a_session.key,
+        user=a_session.user,
         post_id=a_post.id,
         text="A picture of something",
         src="/image/url"))
 
 def test_add_another_post(a_session, a_post, post_service):
     another_post = post_service.create_post(CreatePostRequest(
-        session_key=a_session.key, title="Another Post"))
+        user=a_session.user, title="Another Post"))
     assert post_service.find_all_posts() == [another_post, a_post]
 
 
@@ -53,7 +52,7 @@ def test_contents(a_session, a_post, post_service, a_paragraph, an_image):
 
     # User updates the paragraph section
     updated_paragraph = post_service.update_content(UpdateContentRequest(
-        session_id=a_session.key,
+        user=a_session.user,
         content_id=updated_post.id,
         text="Updated text"))
     updated_post = post_service.find_post_by_id(a_post.id)

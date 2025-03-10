@@ -120,7 +120,7 @@ class UserService:
 
 @dataclass(frozen=True)
 class CreatePostRequest:
-    session_key: str
+    user: UserDto
     title: str
 
 
@@ -156,20 +156,11 @@ class PostDto:
 
 @dataclass(frozen=True)
 class AddContentRequest:
-    session_id: str
+    user: UserDto
     post_id: int
     content_type: ContentTypeDto = ContentTypeDto.PARAGRAPH
     text: str = ""
     src: str = ""
-
-@dataclass(frozen=True)
-class AddParagraphRequest(AddContentRequest):
-    pass
-
-
-@dataclass(frozen=True)
-class AddImageRequest(AddContentRequest):
-    pass
 
 
 class PostNotFound(RuntimeError):
@@ -178,7 +169,7 @@ class PostNotFound(RuntimeError):
 
 @dataclass(frozen=True)
 class UpdateContentRequest:
-    session_id: str
+    user: UserDto
     content_id: int
     text: str = ""
     src: str = ""
@@ -190,8 +181,8 @@ class PostService:
         self.repository = repository
 
     def create_post(self, request: CreatePostRequest) -> PostDto:
-        session = self.repository.find_session_by_key(request.session_key)
-        post = Post(author=session.user, created_on=self.clock.now(), title=request.title)
+        user = self.repository.find_user_by_id(request.user.id)
+        post = Post(author=user, created_on=self.clock.now(), title=request.title)
         self.repository.save_post(post)
         return self.post_to_dto(post)
 
@@ -249,7 +240,7 @@ class PostService:
             text=c.text,
             src=c.src)
 
-    def delete_content(self, session_id: str, content_id: int):
+    def delete_content(self, user: UserDto, content_id: int):
         self.repository.delete_content(content_id)
 
     def update_content(self, request: UpdateContentRequest) -> ContentDto:
