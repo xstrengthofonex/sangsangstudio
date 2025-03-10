@@ -3,7 +3,8 @@ import pytest
 from sangsangstudio.services import (
     CreatePostRequest,
     PostService,
-    AddContentRequest, ContentTypeDto, UpdateContentRequest)
+    AddContentRequest,
+    UpdateContentRequest)
 
 
 @pytest.fixture
@@ -38,10 +39,13 @@ def an_image(a_session, a_post, post_service):
         src="/image/url"))
 
 def test_contents(a_session, a_post, post_service, a_paragraph, an_image):
+    # User adds to content sections to a post
+    # User searches for the post and sees the added contents
     updated_post = post_service.find_post_by_id(a_post.id)
     assert len(updated_post.contents) == 2
     assert [a_paragraph, an_image] == updated_post.contents
 
+    # User updates the paragraph section
     updated_paragraph = post_service.update_content(UpdateContentRequest(
         session_id=a_session.key,
         content_id=updated_post.id,
@@ -49,6 +53,7 @@ def test_contents(a_session, a_post, post_service, a_paragraph, an_image):
     updated_post = post_service.find_post_by_id(a_post.id)
     assert updated_paragraph in updated_post.contents
 
+    # User deletes the image
     post_service.delete_content(a_session, an_image.id)
     updated_post = post_service.find_post_by_id(a_post.id)
     assert len(updated_post.contents) == 1
