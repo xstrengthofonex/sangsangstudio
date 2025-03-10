@@ -259,6 +259,10 @@ class PostService:
         self.repository.save_content(content)
         return self.content_to_dto(content)
 
+    def find_all_posts(self) -> list[PostDto]:
+        posts = self.repository.find_all_posts()
+        return [self.post_to_dto(p) for p in posts]
+
 
 
 

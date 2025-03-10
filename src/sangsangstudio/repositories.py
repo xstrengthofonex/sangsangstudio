@@ -62,6 +62,10 @@ class Repository(metaclass=ABCMeta):
     def find_content_by_id(self, content_id: int) -> Content | None:
         pass
 
+    @abstractmethod
+    def find_all_posts(self) -> list[Post]:
+        pass
+
 
 class MySQLConnector:
     def __init__(self, user: str, host: str, port: int, password: str, database: str):
@@ -311,6 +315,17 @@ class MySQLRepository(Repository):
             post.contents = self.find_contents_for_post(post_id, cursor)
             return post
 
+    def _select_all_posts_statement(self) -> str:
+        return (f"SELECT {self.with_prefix(self.POST_COLUMNS, 'posts')}, "
+                f"{self.with_prefix(self.USERS_COLUMNS, 'users')} "
+                "FROM posts "
+                "INNER JOIN users ON posts.author_id = users.id "
+                "ORDER BY created_on DESC;")
+
+    def find_all_posts(self) -> list[Post]:
+        rows = self.find_all(self._select_all_posts_statement(), ())
+        return [self.row_to_post(r) for r in rows]
+
     def insert_content_statement(self) -> str:
         return (f"INSERT INTO contents "
                 f"({self.excluding(self.CONTENT_COLUMNS, 'id')}) "
@@ -369,3 +384,5 @@ class MySQLRepository(Repository):
 
     def update_content(self, content: Content):
         self.update(self.update_contents_statement(), (content.text, content.src, content.id))
+
+

@@ -5,6 +5,8 @@ from falcon import App, Request, Response, HTTP_OK
 from jinja2 import Environment, FileSystemLoader
 from waitress import serve
 
+from sangsangstudio.factories import DevelopmentAppFactory
+from sangsangstudio.services import PostService
 from src.sangsangstudio.settings import TEMPLATES_DIR, STATIC_DIR
 
 
@@ -33,13 +35,25 @@ class HomeResource:
         res.text = self.view.render("home.html")
 
 
+class BlogResource:
+    def __init__(self, view: TemplateView, post_service: PostService):
+        self.view = view
+        self.post_service = post_service
+
+    def on_get(self, req: Request, res: Response):
+        pass
+
+
 def create_app():
-    app = App()
-    view = Jinja2TemplateView(TEMPLATES_DIR)
-    home_resource = HomeResource(view)
-    app.add_route("/", home_resource)
-    app.add_static_route("/static", STATIC_DIR)
-    return app
+    with DevelopmentAppFactory() as factory:
+        app = App()
+        view = Jinja2TemplateView(TEMPLATES_DIR)
+        home_resource = HomeResource(view)
+        blog_resource = BlogResource(view, factory.post_service())
+        app.add_route("/", home_resource)
+        app.add_route("/blog", blog_resource)
+        app.add_static_route("/static", STATIC_DIR)
+        return app
 
 
 def run_server(app, host: str = "localhost", port: int = 8080):

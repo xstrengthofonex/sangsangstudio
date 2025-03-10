@@ -38,6 +38,12 @@ def an_image(a_session, a_post, post_service):
         text="A picture of something",
         src="/image/url"))
 
+def test_add_another_post(a_session, a_post, post_service):
+    another_post = post_service.create_post(CreatePostRequest(
+        session_key=a_session.key, title="Another Post"))
+    assert post_service.find_all_posts() == [another_post, a_post]
+
+
 def test_contents(a_session, a_post, post_service, a_paragraph, an_image):
     # User adds to content sections to a post
     # User searches for the post and sees the added contents
@@ -58,4 +64,5 @@ def test_contents(a_session, a_post, post_service, a_paragraph, an_image):
     updated_post = post_service.find_post_by_id(a_post.id)
     assert len(updated_post.contents) == 1
     assert an_image not in updated_post.contents
+
 
