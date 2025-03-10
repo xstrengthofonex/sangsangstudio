@@ -1,8 +1,6 @@
 import os
 from abc import ABC, abstractmethod
 
-from dotenv import load_dotenv
-
 from sangsangstudio.clock import SystemClock
 from sangsangstudio.repositories import MySQLConnector, MySQLRepository
 from sangsangstudio.services import PostService, UserService, BcryptPasswordHasher
@@ -46,4 +44,4 @@ class DevelopmentAppFactory(AppFactory):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._repository.drop_tables()
+        pass
