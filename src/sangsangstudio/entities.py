@@ -61,3 +61,10 @@ class Post(Entity):
         if not self.contents:
             return 1
         return max(c.sequence for c in self.contents) + 1
+
+
+@dataclass
+class Admin(Entity):
+    user: User | None = None
+    first_name: str = ""
+    family_name: str = ""

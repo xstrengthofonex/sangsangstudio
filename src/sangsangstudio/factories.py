@@ -3,12 +3,12 @@ from abc import ABC, abstractmethod
 
 from sangsangstudio.clock import SystemClock
 from sangsangstudio.repositories import MySQLConnector, MySQLRepository
-from sangsangstudio.services import PostService, UserService, BcryptPasswordHasher, CreateUserRequest
+from sangsangstudio.services import AuthorService, UserService, BcryptPasswordHasher, CreateUserRequest
 
 
 class AppFactory(ABC):
     @abstractmethod
-    def post_service(self) -> PostService:
+    def author_service(self) -> AuthorService:
         pass
 
     @abstractmethod
@@ -31,12 +31,12 @@ class DevelopmentAppFactory(AppFactory):
             repository=self._repository,
             clock=self._clock,
             password_hasher=self._password_hasher)
-        self._post_service = PostService(
+        self._author_service = AuthorService(
             repository=self._repository,
             clock=self._clock)
 
-    def post_service(self) -> PostService:
-        return self._post_service
+    def author_service(self) -> AuthorService:
+        return self._author_service
 
     def user_service(self) -> UserService:
         return self._user_service

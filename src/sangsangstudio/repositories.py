@@ -7,6 +7,7 @@ from sangsangstudio.clock import Clock
 from sangsangstudio.entities import (
     User,
     Session,
+    Admin,
     Post,
     PostStatus,
     Content,
@@ -66,6 +67,14 @@ class Repository(metaclass=ABCMeta):
     def find_all_posts(self) -> list[Post]:
         pass
 
+    @abstractmethod
+    def save_admin(self, admin: Admin):
+        pass
+
+    @abstractmethod
+    def find_admin_by_id(self, admin_id: int) -> Admin | None:
+        pass
+
 
 class MySQLConnector:
     def __init__(self, user: str, host: str, port: int, password: str, database: str):
@@ -89,6 +98,7 @@ class MySQLRepository(Repository):
     SESSION_COLUMNS = "id, session_key, user_id, created_on"
     POST_COLUMNS = "id, author_id, created_on, status, title"
     CONTENT_COLUMNS = "id, post_id, type, sequence, text, src"
+    ADMIN_COLUMNS = "id, user_id, first_name, family_name"
     TIMESTAMP_FMT = "%Y-%m-%d %H:%M:%S.%f"
 
     def __init__(self, connector: MySQLConnector, clock: Clock):
@@ -155,10 +165,25 @@ class MySQLRepository(Repository):
     def drop_contents_table_statement() -> str:
         return "DROP TABLE IF EXISTS contents"
 
+    @staticmethod
+    def create_admin_table_statement() -> str:
+        return ("CREATE TABLE IF NOT EXISTS admin ("
+                "id INT(11) NOT NULL AUTO_INCREMENT, "
+                "user_id INT(11), "
+                "first_name VARCHAR(50), "
+                "family_name VARCHAR(50), "
+                "PRIMARY KEY (id), "
+                "FOREIGN KEY (user_id) REFERENCES users(id));")
+
+    @staticmethod
+    def drop_admin_table_statement() -> str:
+        return "DROP TABLE IF EXISTS admin;"
+
     def create_tables(self):
         with self.connect() as conn:
             cursor = conn.cursor()
             cursor.execute(self.create_users_table_statement())
+            cursor.execute(self.create_admin_table_statement())
             cursor.execute(self.create_sessions_table_statement())
             cursor.execute(self.create_posts_table_statement())
             cursor.execute(self.create_contents_table_statement())
@@ -169,6 +194,7 @@ class MySQLRepository(Repository):
             cursor.execute(self.drop_contents_table_statement())
             cursor.execute(self.drop_posts_table_statement())
             cursor.execute(self.drop_sessions_table_statement())
+            cursor.execute(self.drop_admin_table_statement())
             cursor.execute(self.drop_users_table_statement())
 
     def save(self, entity: Entity, statement: str, params: tuple):
@@ -377,6 +403,35 @@ class MySQLRepository(Repository):
     def find_content_by_id(self, content_id: int) -> Content | None:
         row = self.find_one(self.select_content_by_id_statement(), (content_id,))
         return self.row_to_content(row) if row else None
+
+    def insert_admin_statement(self) -> str:
+        return (f"INSERT INTO admin "
+                f"({self.excluding(self.ADMIN_COLUMNS, 'id')}) "
+                f"VALUES (%s, %s, %s);")
+
+    def save_admin(self, admin: Admin):
+        self.save(admin, self.insert_admin_statement(),
+                  (admin.user.id, admin.first_name, admin.family_name))
+
+
+    def select_admin_by_id_statement(self) -> str:
+        return (f"SELECT {self.with_prefix(self.ADMIN_COLUMNS, 'admin')}, "
+                f"{self.with_prefix(self.USERS_COLUMNS, 'users')} "
+                "FROM admin "
+                "INNER JOIN users ON admin.user_id = users.id "
+                "WHERE admin.id = %s;")
+
+    def find_admin_by_id(self, admin_id: int) -> Admin | None:
+        row = self.find_one(self.select_admin_by_id_statement(), (admin_id, ))
+        return self.row_to_admin(row) if row else None
+
+    def row_to_admin(self, row: tuple) -> Admin:
+        admin_id, _, first_name, last_name, *rest = row
+        return Admin(
+            id=admin_id,
+            user=self.row_to_user(rest),
+            first_name=first_name,
+            family_name=last_name)
 
     @staticmethod
     def update_contents_statement() -> str:

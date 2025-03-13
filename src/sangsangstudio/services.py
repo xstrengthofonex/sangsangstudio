@@ -7,7 +7,7 @@ from enum import Enum
 import bcrypt
 
 from sangsangstudio.clock import Clock
-from sangsangstudio.entities import User, Session, Post, Content, ContentType
+from sangsangstudio.entities import User, Session, Post, Content, ContentType, Admin
 from sangsangstudio.repositories import Repository
 
 
@@ -175,7 +175,7 @@ class UpdateContentRequest:
     src: str = ""
 
 
-class PostService:
+class AuthorService:
     def __init__(self, repository: Repository, clock: Clock):
         self.clock = clock
         self.repository = repository
@@ -254,6 +254,44 @@ class PostService:
         posts = self.repository.find_all_posts()
         return [self.post_to_dto(p) for p in posts]
 
+    def find_content_by_id(self, content_id: int) -> ContentDto:
+        content = self.repository.find_content_by_id(content_id)
+        return self.content_to_dto(content)
 
 
+@dataclass(frozen=True)
+class RegisterAdminRequest:
+    user_id: int
+    first_name: str
+    family_name: str
 
+
+@dataclass(frozen=True)
+class AdminDto:
+    id: int
+    first_name: str
+    family_name: str
+    username: str
+
+
+class AdminService:
+    def __init__(self, repository: Repository, clock: Clock):
+        self.clock = clock
+        self.repository = repository
+
+    def register_admin(self, request: RegisterAdminRequest) -> AdminDto:
+        user = self.repository.find_user_by_id(request.user_id)
+        admin = Admin(user=user, first_name=request.first_name, family_name=request.family_name)
+        self.repository.save_admin(admin)
+        return self.admin_to_dto(admin)
+
+    def find_admin_by_id(self, admin_id: int) -> AdminDto:
+        admin = self.repository.find_admin_by_id(admin_id)
+        return self.admin_to_dto(admin)
+
+    def admin_to_dto(self, admin: Admin) -> AdminDto:
+        return AdminDto(
+            id=admin.id,
+            username=admin.user.username,
+            first_name=admin.first_name,
+            family_name=admin.family_name)

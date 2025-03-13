@@ -1,13 +1,31 @@
 import sys
 from abc import ABC, abstractmethod
 
-from falcon import App, Request, Response, HTTP_OK, HTTPFound
-from jinja2 import Environment, FileSystemLoader
+from falcon import (
+    App,
+    Request,
+    Response,
+    HTTP_OK,
+    HTTPFound)
+from jinja2 import (
+    Environment,
+    FileSystemLoader)
 from waitress import serve
 
-from sangsangstudio.factories import DevelopmentAppFactory, AppFactory
-from sangsangstudio.services import PostService, UserService, LoginRequest, SessionDto
-from src.sangsangstudio.settings import TEMPLATES_DIR, STATIC_DIR
+from sangsangstudio.factories import (
+    DevelopmentAppFactory,
+    AppFactory)
+from sangsangstudio.services import (
+    AuthorService,
+    UserService,
+    LoginRequest,
+    SessionDto,
+    CreatePostRequest,
+    AddContentRequest,
+    ContentTypeDto, UpdateContentRequest)
+from src.sangsangstudio.settings import (
+    TEMPLATES_DIR,
+    STATIC_DIR)
 
 
 class TemplateView(ABC):
@@ -37,7 +55,7 @@ class HomeResource:
 
 
 class BlogResource:
-    def __init__(self, view: TemplateView, post_service: PostService):
+    def __init__(self, view: TemplateView, post_service: AuthorService):
         self.view = view
         self.post_service = post_service
 
@@ -47,12 +65,6 @@ class BlogResource:
         res.content_type = "text/html"
         res.status = HTTP_OK
         res.text = self.view.render("blog.html", posts=posts, user=session.user)
-
-    def on_get_posts_new(self, req: Request, res: Response):
-        session: SessionDto | None = req.env.get("session", None)
-        res.content_type = "text/html"
-        res.status = HTTP_OK
-        res.text = self.view.render("blog_posts_new.html", user=session.user)
 
 
 class UsersResource:
@@ -77,11 +89,9 @@ def create_app(factory: AppFactory):
     app = App(middleware=[AuthenticationMiddleware(factory.user_service())])
     view = Jinja2TemplateView(TEMPLATES_DIR)
     home_resource = HomeResource(view)
-    blog_resource = BlogResource(view, factory.post_service())
-    users_resource = UsersResource(view, factory.user_service())
+    blog_resource = BlogResource(view, factory.author_service())
     app.add_route("/", home_resource)
     app.add_route("/blog", blog_resource)
-    app.add_route("/blog/posts/new", blog_resource, suffix="posts_new")
     app.add_static_route("/static", STATIC_DIR)
     return app
 
